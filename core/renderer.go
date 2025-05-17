@@ -16,11 +16,11 @@ var WHITE = color.RGBA{255, 255, 255, 255}
 
 type QRRenderer struct {
 	// data    []byte // data
-	scale   int    // 1 is means literal qr size
-	version int    // currently only 1
-	ECLevel string // e.g. "L", "M", "Q", "H"
-	mask    int    // 0-7 inclusive
-	matrix  [][]byte
+	scale   int      // 1 is means literal qr size
+	version int      // currently only 1
+	ECLevel string   // e.g. "L", "M", "Q", "H"
+	mask    int      // 0-7 inclusive
+	matrix  [][]byte // raw size matrix we are goona scale this with scale
 	img     *image.RGBA
 }
 
@@ -34,6 +34,9 @@ func (r *QRRenderer) SetConfig(scale int, version int, mask int, ECLevel string)
 	r.matrix = make([][]byte, 21)
 	for i := range r.matrix {
 		r.matrix[i] = make([]byte, 21)
+		for j := range r.matrix[i] {
+			r.matrix[i][j] = 3 // 3 MEANS UNASSIGNED
+		}
 	}
 
 	gray := color.RGBA{R: 200, G: 200, B: 200, A: 255}
@@ -97,13 +100,13 @@ func (r *QRRenderer) SetFormatInfo() {
 	binaryData := fmt.Sprintf("%08b", data)
 	fmt.Println(binaryData)
 
-	for i := range 15 {
+	for i := 0; i < 15; i++ {
 		binary := binaryData[i] - 48
 
 		if i < 6 {
 			r.matrix[i][8] = binary
 		} else if i < 8 {
-			r.matrix[i][8] = binary
+			r.matrix[i+1][8] = binary
 		} else {
 			r.matrix[r.getQRSize()-15+i][8] = binary
 		}
@@ -127,9 +130,10 @@ func (r *QRRenderer) Save() error {
 		for colIndex := range row {
 			if r.matrix[rowIndex][colIndex] == 1 {
 				r.img.SetRGBA(rowIndex, colIndex, color.RGBA{0, 0, 0, 255})
-			} else {
-				continue
+			} else if r.matrix[rowIndex][colIndex] == 0 {
 				r.img.SetRGBA(rowIndex, colIndex, color.RGBA{255, 255, 255, 255})
+			} else { // 3
+				continue
 			}
 		}
 	}

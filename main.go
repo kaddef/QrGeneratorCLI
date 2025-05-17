@@ -66,5 +66,4 @@ func main() {
 	fmt.Println(core.GenerateECPolynomial(7))
 
 	r.SetFormatInfo()
-
 }
