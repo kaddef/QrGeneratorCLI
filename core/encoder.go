@@ -1,4 +1,130 @@
 package core
 
-type QREncoder struct {
+import (
+	"fmt"
+	"strconv"
+)
+
+type RSEncoder struct { // Reed-Solomon Encoder
+	PlainTextData  string
+	PlainByteArray []byte
+	Encoding       string
+	Length         int
+	BinaryData     string
+	DataByteArray  []byte
+}
+
+func (r *RSEncoder) SetPlainMessage(msg string) {
+	r.PlainTextData = msg
+	r.Length = len(msg)
+	r.Encoding = "Byte" // Numeric Alphanumeric Byte Kanji
+	r.PlainByteArray = []byte(msg)
+}
+
+func (r *RSEncoder) Debug() {
+	fmt.Print("Plain text: ")
+	fmt.Println(r.PlainTextData)
+
+	fmt.Print("PlainByteArray: ")
+	fmt.Println(r.PlainByteArray)
+
+	fmt.Print("Encoding: ")
+	fmt.Println(r.Encoding)
+
+	fmt.Print("Length: ")
+	fmt.Println(r.Length)
+
+	fmt.Print("BinaryData: ")
+	fmt.Println(r.BinaryData)
+
+	fmt.Print("DataByteArray: ")
+	fmt.Println(r.DataByteArray)
+}
+
+func (r *RSEncoder) getEncodingBits() string {
+	switch r.Encoding {
+	case "Numeric":
+		return "0001"
+	case "Alphanumeric":
+		return "0010"
+	case "Byte":
+		return "0100"
+	case "Kanji":
+		return "1000"
+	default:
+		panic("Invalid Encoding Type") // maybe return error
+	}
+}
+
+func (r *RSEncoder) binaryToByte() {
+	for i := 0; i < len(r.BinaryData); i += 8 {
+		byteVal, _ := strconv.ParseUint(r.BinaryData[i:i+8], 2, 8)
+		r.DataByteArray = append(r.DataByteArray, byte(byteVal))
+	}
+}
+
+func (r *RSEncoder) CreateData() {
+	encodingBits := r.getEncodingBits()
+	lengthBits := fmt.Sprintf("%08b", r.Length) //TODO: COUNT OF BITS CHANGE ACCORDING TO THE VERSION HORDCODED FOR NOW
+
+	fmt.Println(encodingBits)
+	fmt.Println(lengthBits)
+
+	r.BinaryData += encodingBits
+	r.BinaryData += lengthBits
+
+	for _, b := range r.PlainByteArray {
+		r.BinaryData += fmt.Sprintf("%08b", b)
+	}
+
+	maxBits := 152 // TODO: CHANGES ACCORDING TO EC AND VERSION HARDCODED FOR NOW
+	remaining := maxBits - len(r.BinaryData)
+
+	// Terminator Bits
+	if remaining >= 4 {
+		r.BinaryData += "0000"
+		remaining -= 4
+	} else {
+		for range remaining {
+			r.BinaryData += "0"
+			remaining--
+		}
+	}
+
+	// Padding to Multiple of 8, This Only Happens in Numeric or Alphanumeric not Byte
+	if len(r.BinaryData)%8 != 0 {
+		padLength := 8 - (len(r.BinaryData) % 8)
+		for range padLength {
+			r.BinaryData += "0"
+			remaining--
+		}
+	}
+
+	// After these step if still place left pad with this data
+	extraPad := []string{"11101100", "00010001"}
+	padIndex := 0
+	for remaining >= 8 {
+		r.BinaryData += extraPad[padIndex]
+		padIndex = (padIndex + 1) % 2
+		remaining -= 8
+	}
+
+	// THIS SHOULDNT HAPPEN IF WE HIT HERE SOMETHING IS WRONG
+	if remaining > 0 {
+		r.BinaryData += fmt.Sprintf("%0*s", remaining, "")
+		panic("WE HIT A MINE")
+	}
+
+	r.binaryToByte()
+}
+
+func (r *RSEncoder) Encode() {
+	generator := GenerateECPolynomial(7) // 7 HARDCODED
+	fmt.Println(generator)
+	paddedData := make([]byte, len(r.DataByteArray)+7)
+	copy(paddedData, r.DataByteArray)
+	fmt.Println(paddedData)
+	remainder := PolyMod(paddedData, generator)
+	fmt.Print("OLD REMANINDER: ")
+	fmt.Println(remainder)
 }

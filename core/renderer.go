@@ -59,7 +59,6 @@ func (r *QRRenderer) getQRSize() int {
 
 func (ren *QRRenderer) SetFinderPattern(x, y, scale, orientation int) {
 	finderPositions := ren.getFinderPos()
-	fmt.Println(finderPositions)
 	for _, pos := range finderPositions {
 		row := pos[0] // 0 14 0
 		col := pos[1] // 0 0 14
@@ -101,7 +100,6 @@ func (r *QRRenderer) SetFormatInfo() {
 		panic("Wrong EC or Mask")
 	}
 	binaryData := fmt.Sprintf("%08b", data)
-	fmt.Println(binaryData)
 
 	for i := 0; i <= 14; i++ {
 		binary := binaryData[i] - 48
