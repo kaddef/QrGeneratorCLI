@@ -63,6 +63,7 @@ func main() {
 	r.SetFormatInfo()
 	r.SetDarkModule()
 	r.SetData()
+	r.ApplyMask()
 	r.Save()
 	fmt.Println(core.GenerateECPolynomial(7))
 

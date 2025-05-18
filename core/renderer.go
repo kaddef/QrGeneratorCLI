@@ -135,19 +135,19 @@ func (r *QRRenderer) SetData() {
 		if (i/2)%2 == 0 {
 			for j := 0; j < r.getQRSize(); j++ {
 				if r.matrix[i][j] == 3 {
-					r.matrix[i][j] = 4 //byte(rand.Intn(255) % 2)
+					r.matrix[i][j] = 0 //byte(rand.Intn(255) % 2)
 				}
 				if r.matrix[i-1][j] == 3 {
-					r.matrix[i-1][j] = 4 //byte(rand.Intn(255) % 2)
+					r.matrix[i-1][j] = 0 //byte(rand.Intn(255) % 2)
 				}
 			}
 		} else {
 			for j := r.getQRSize() - 1; j >= 0; j-- {
 				if r.matrix[i][j] == 3 {
-					r.matrix[i][j] = 4 //byte(rand.Intn(255) % 2)
+					r.matrix[i][j] = 0 //byte(rand.Intn(255) % 2)
 				}
 				if r.matrix[i-1][j] == 3 {
-					r.matrix[i-1][j] = 4 //byte(rand.Intn(255) % 2)
+					r.matrix[i-1][j] = 0 //byte(rand.Intn(255) % 2)
 				}
 			}
 		}
@@ -160,7 +160,30 @@ func (r *QRRenderer) SetDarkModule() {
 }
 
 func (r *QRRenderer) ApplyMask() {
+	// Implement reserves bit system for future versions
+	size := r.getQRSize()
+	for row := 0; row < size; row++ {
+		for col := 0; col < size; col++ {
+			if (row <= 8 && col <= 8) || // top-left
+				(row <= 8 && col >= size-8) || // top-right
+				(row >= size-8 && col <= 8) || // bottom-left
 
+				// Skip timing patterns (row 6, col 6)
+				row == 6 || col == 6 ||
+
+				// Skip format info (fixed 15 bits near finders)
+				(row == 8 && col < 9) || (row < 9 && col == 8) || // top-left
+				(row == 8 && col >= size-8) || // top-right horizontal
+				(row >= size-8 && col == 8) { // bottom-left vertical
+
+				continue
+			}
+			eval := col%3 == 0
+			if eval {
+				r.matrix[col][row] ^= 1 // flips bit
+			}
+		}
+	}
 }
 
 func (r *QRRenderer) Save() error {
