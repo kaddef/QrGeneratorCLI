@@ -6,7 +6,6 @@ var expTable [512]byte
 var logTable [256]byte
 
 func InitTables() {
-	// Generator α = 2
 	x := 1
 	for i := 0; i < 255; i++ {
 		expTable[i] = byte(x)
@@ -16,10 +15,9 @@ func InitTables() {
 			x ^= 0x11D // primitive polynomial
 		}
 	}
-
 	// Duplicate for easy overflow handling in expTable
-	for i := 256; i < 512; i++ {
-		expTable[i] = expTable[i-256]
+	for i := 255; i < 512; i++ {
+		expTable[i] = expTable[i-255]
 	}
 }
 
