@@ -62,6 +62,7 @@ func main() {
 	r.SetTimingPattern()
 	r.SetFormatInfo()
 	r.SetDarkModule()
+	r.SetData()
 	r.Save()
 	fmt.Println(core.GenerateECPolynomial(7))
 

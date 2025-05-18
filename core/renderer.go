@@ -86,9 +86,12 @@ func (ren *QRRenderer) SetFinderPattern(x, y, scale, orientation int) {
 }
 
 func (r *QRRenderer) SetTimingPattern() {
-	for i := 8; i <= len(r.matrix)-8; i += 2 {
-		r.matrix[i][6] = 1
-		r.matrix[6][i] = 1
+	size := len(r.matrix)
+	for i := 8; i < size-8; i++ {
+		value := byte((i + 1) % 2)
+
+		r.matrix[i][6] = value
+		r.matrix[6][i] = value
 	}
 }
 
@@ -100,18 +103,19 @@ func (r *QRRenderer) SetFormatInfo() {
 	binaryData := fmt.Sprintf("%08b", data)
 	fmt.Println(binaryData)
 
-	for i := 0; i < 15; i++ {
+	for i := 0; i <= 14; i++ {
 		binary := binaryData[i] - 48
 
-		if i < 6 {
+		if i <= 5 {
 			r.matrix[i][8] = binary
-		} else if i < 8 {
+		} else if i == 6 {
 			r.matrix[i+1][8] = binary
 		} else {
-			r.matrix[r.getQRSize()-15+i][8] = binary
+			rowIndex := r.getQRSize() - 8 + (i - 7)
+			r.matrix[rowIndex][8] = binary
 		}
 
-		if i < 8 {
+		if i < 7 {
 			r.matrix[8][r.getQRSize()-i-1] = binary
 		} else if i < 9 {
 			r.matrix[8][15-i-1+1] = binary
@@ -121,8 +125,42 @@ func (r *QRRenderer) SetFormatInfo() {
 	}
 }
 
+func (r *QRRenderer) SetData() {
+	// DO NOT FORGET TO SKIP VERTICAL TIMING LINE
+	for i := r.getQRSize() - 1; i > 0; i -= 2 { // Goes Horizontally
+		if i == 6 || i-1 == 6 {
+			i--
+		}
+
+		if (i/2)%2 == 0 {
+			for j := 0; j < r.getQRSize(); j++ {
+				if r.matrix[i][j] == 3 {
+					r.matrix[i][j] = 4 //byte(rand.Intn(255) % 2)
+				}
+				if r.matrix[i-1][j] == 3 {
+					r.matrix[i-1][j] = 4 //byte(rand.Intn(255) % 2)
+				}
+			}
+		} else {
+			for j := r.getQRSize() - 1; j >= 0; j-- {
+				if r.matrix[i][j] == 3 {
+					r.matrix[i][j] = 4 //byte(rand.Intn(255) % 2)
+				}
+				if r.matrix[i-1][j] == 3 {
+					r.matrix[i-1][j] = 4 //byte(rand.Intn(255) % 2)
+				}
+			}
+		}
+		// break
+	}
+}
+
 func (r *QRRenderer) SetDarkModule() {
 	r.matrix[8][(4*r.version)+9] = 1
+}
+
+func (r *QRRenderer) ApplyMask() {
+
 }
 
 func (r *QRRenderer) Save() error {
@@ -132,7 +170,10 @@ func (r *QRRenderer) Save() error {
 				r.img.SetRGBA(rowIndex, colIndex, color.RGBA{0, 0, 0, 255})
 			} else if r.matrix[rowIndex][colIndex] == 0 {
 				r.img.SetRGBA(rowIndex, colIndex, color.RGBA{255, 255, 255, 255})
-			} else { // 3
+			} else if r.matrix[rowIndex][colIndex] == 4 {
+				// 4 IS USED FOR DEBUGGING
+				r.img.SetRGBA(rowIndex, colIndex, color.RGBA{255, 0, 0, 255})
+			} else { // 3 UNASSIGNED
 				continue
 			}
 		}
