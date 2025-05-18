@@ -8,13 +8,13 @@ func main() {
 	core.InitTables()
 
 	e := core.RSEncoder{}
-	e.SetPlainMessage("www.wikipedia.org")
+	e.SetPlainMessage("1")
 	e.CreateData()
-	e.Encode()
+	encodedData := e.Encode()
 	// e.Debug()
 
 	r := core.QRRenderer{}
-	r.SetConfig(1, 1, 2, "L")
+	r.SetConfig(encodedData, 1, 1, 2, "L")
 	r.SetFinderPattern(1, 1, 1, 1)
 	r.SetTimingPattern()
 	r.SetFormatInfo()

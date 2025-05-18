@@ -6,12 +6,13 @@ import (
 )
 
 type RSEncoder struct { // Reed-Solomon Encoder
-	PlainTextData  string
-	PlainByteArray []byte
-	Encoding       string
-	Length         int
-	BinaryData     string
-	DataByteArray  []byte
+	PlainTextData    string
+	PlainByteArray   []byte
+	Encoding         string
+	Length           int
+	BinaryData       string
+	DataByteArray    []byte
+	EncodedByteArray []byte
 }
 
 func (r *RSEncoder) SetPlainMessage(msg string) {
@@ -67,9 +68,6 @@ func (r *RSEncoder) CreateData() {
 	encodingBits := r.getEncodingBits()
 	lengthBits := fmt.Sprintf("%08b", r.Length) //TODO: COUNT OF BITS CHANGE ACCORDING TO THE VERSION HORDCODED FOR NOW
 
-	fmt.Println(encodingBits)
-	fmt.Println(lengthBits)
-
 	r.BinaryData += encodingBits
 	r.BinaryData += lengthBits
 
@@ -118,13 +116,12 @@ func (r *RSEncoder) CreateData() {
 	r.binaryToByte()
 }
 
-func (r *RSEncoder) Encode() {
+func (r *RSEncoder) Encode() []byte {
 	generator := GenerateECPolynomial(7) // 7 HARDCODED
-	fmt.Println(generator)
 	paddedData := make([]byte, len(r.DataByteArray)+7)
 	copy(paddedData, r.DataByteArray)
-	fmt.Println(paddedData)
 	remainder := PolyMod(paddedData, generator)
-	fmt.Print("OLD REMANINDER: ")
-	fmt.Println(remainder)
+	copy(paddedData[len(paddedData)-7:], remainder)
+	r.EncodedByteArray = paddedData
+	return r.EncodedByteArray
 }

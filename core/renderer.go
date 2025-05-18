@@ -7,6 +7,7 @@ import (
 	"image/draw"
 	"image/png"
 	"os"
+	"strconv"
 )
 
 const FINDER_PATTERN_SIZE = 7
@@ -15,7 +16,7 @@ var BLACK = color.RGBA{0, 0, 0, 255}
 var WHITE = color.RGBA{255, 255, 255, 255}
 
 type QRRenderer struct {
-	// data    []byte // data
+	data    []byte   // data
 	scale   int      // 1 is means literal qr size
 	version int      // currently only 1
 	ECLevel string   // e.g. "L", "M", "Q", "H"
@@ -24,11 +25,12 @@ type QRRenderer struct {
 	img     *image.RGBA
 }
 
-func (r *QRRenderer) SetConfig(scale int, version int, mask int, ECLevel string) {
+func (r *QRRenderer) SetConfig(data []byte, scale int, version int, mask int, ECLevel string) {
 	r.scale = scale
 	r.version = 1
 	r.mask = mask
 	r.ECLevel = ECLevel
+	r.data = data
 
 	r.img = image.NewRGBA(image.Rectangle{image.Point{0, 0}, image.Point{21, 21}})
 	r.matrix = make([][]byte, 21)
@@ -125,6 +127,12 @@ func (r *QRRenderer) SetFormatInfo() {
 
 func (r *QRRenderer) SetData() {
 	// DO NOT FORGET TO SKIP VERTICAL TIMING LINE
+	binary := ""
+	for _, b := range r.data {
+		binary += fmt.Sprintf("%08b", b)
+	}
+	binaryIndex := 0
+	//
 	for i := r.getQRSize() - 1; i > 0; i -= 2 { // Goes Horizontally
 		if i == 6 || i-1 == 6 {
 			i--
@@ -133,23 +141,30 @@ func (r *QRRenderer) SetData() {
 		if (i/2)%2 == 0 {
 			for j := 0; j < r.getQRSize(); j++ {
 				if r.matrix[i][j] == 3 {
-					r.matrix[i][j] = 0 //byte(rand.Intn(255) % 2)
+					val, _ := strconv.ParseUint(string(binary[binaryIndex]), 2, 8)
+					r.matrix[i][j] = byte(val)
+					binaryIndex++
 				}
 				if r.matrix[i-1][j] == 3 {
-					r.matrix[i-1][j] = 0 //byte(rand.Intn(255) % 2)
+					val, _ := strconv.ParseUint(string(binary[binaryIndex]), 2, 8)
+					r.matrix[i-1][j] = byte(val)
+					binaryIndex++
 				}
 			}
 		} else {
 			for j := r.getQRSize() - 1; j >= 0; j-- {
 				if r.matrix[i][j] == 3 {
-					r.matrix[i][j] = 0 //byte(rand.Intn(255) % 2)
+					val, _ := strconv.ParseUint(string(binary[binaryIndex]), 2, 8)
+					r.matrix[i][j] = byte(val)
+					binaryIndex++
 				}
 				if r.matrix[i-1][j] == 3 {
-					r.matrix[i-1][j] = 0 //byte(rand.Intn(255) % 2)
+					val, _ := strconv.ParseUint(string(binary[binaryIndex]), 2, 8)
+					r.matrix[i-1][j] = byte(val)
+					binaryIndex++
 				}
 			}
 		}
-		// break
 	}
 }
 
