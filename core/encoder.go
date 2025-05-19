@@ -30,10 +30,12 @@ func (r *RSEncoder) Debug() {
 	fmt.Println(r.PlainByteArray)
 
 	fmt.Print("Encoding: ")
-	fmt.Println(r.Encoding)
+	fmt.Print(r.Encoding)
+	fmt.Println(" (", r.getEncodingBits(), ")")
 
 	fmt.Print("Length: ")
-	fmt.Println(r.Length)
+	fmt.Print(r.Length)
+	fmt.Println(" (", fmt.Sprintf("%08b", r.Length), ")")
 
 	fmt.Print("BinaryData: ")
 	fmt.Println(r.BinaryData)

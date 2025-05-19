@@ -8,7 +8,7 @@ func main() {
 	core.InitTables()
 
 	e := core.RSEncoder{}
-	e.SetPlainMessage("1")
+	e.SetPlainMessage("deneme")
 	e.CreateData()
 	encodedData := e.Encode()
 	// e.Debug()

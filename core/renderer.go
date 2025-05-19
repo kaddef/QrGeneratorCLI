@@ -126,20 +126,19 @@ func (r *QRRenderer) SetFormatInfo() {
 }
 
 func (r *QRRenderer) SetData() {
-	// DO NOT FORGET TO SKIP VERTICAL TIMING LINE
 	binary := ""
 	for _, b := range r.data {
 		binary += fmt.Sprintf("%08b", b)
 	}
 	binaryIndex := 0
-	//
-	for i := r.getQRSize() - 1; i > 0; i -= 2 { // Goes Horizontally
-		if i == 6 || i-1 == 6 {
+
+	for i := r.getQRSize() - 1; i > 0; i -= 2 {
+		if i == 6 {
 			i--
 		}
 
 		if (i/2)%2 == 0 {
-			for j := 0; j < r.getQRSize(); j++ {
+			for j := r.getQRSize() - 1; j >= 0; j-- {
 				if r.matrix[i][j] == 3 {
 					val, _ := strconv.ParseUint(string(binary[binaryIndex]), 2, 8)
 					r.matrix[i][j] = byte(val)
@@ -152,7 +151,7 @@ func (r *QRRenderer) SetData() {
 				}
 			}
 		} else {
-			for j := r.getQRSize() - 1; j >= 0; j-- {
+			for j := 0; j < r.getQRSize(); j++ {
 				if r.matrix[i][j] == 3 {
 					val, _ := strconv.ParseUint(string(binary[binaryIndex]), 2, 8)
 					r.matrix[i][j] = byte(val)
