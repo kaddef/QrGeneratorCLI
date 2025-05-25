@@ -11,9 +11,10 @@ import (
 )
 
 const FINDER_PATTERN_SIZE = 7
+const QUIET_ZONE_SIZE = 4
 
-var BLACK = color.RGBA{0, 0, 0, 255}
-var WHITE = color.RGBA{255, 255, 255, 255}
+var WHITE = color.RGBA{0, 0, 0, 255}
+var BLACK = color.RGBA{255, 255, 255, 255}
 
 type QRRenderer struct {
 	data    []byte   // data
@@ -27,36 +28,37 @@ type QRRenderer struct {
 
 func (r *QRRenderer) SetConfig(data []byte, scale int, version int, mask int, ECLevel string) {
 	r.scale = scale
-	r.version = 1
+	r.version = version
 	r.mask = mask
 	r.ECLevel = ECLevel
 	r.data = data
 
-	r.img = image.NewRGBA(image.Rectangle{image.Point{0, 0}, image.Point{21, 21}})
-	r.matrix = make([][]byte, 21)
+	qrSize := r.getQrSize()
+
+	r.img = image.NewRGBA(image.Rectangle{image.Point{0, 0}, image.Point{(qrSize * scale) + (QUIET_ZONE_SIZE * scale * 2), (qrSize * scale) + (QUIET_ZONE_SIZE * scale * 2)}})
+	r.matrix = make([][]byte, qrSize)
 	for i := range r.matrix {
-		r.matrix[i] = make([]byte, 21)
+		r.matrix[i] = make([]byte, qrSize)
 		for j := range r.matrix[i] {
 			r.matrix[i][j] = 3 // 3 MEANS UNASSIGNED
 		}
 	}
 
-	gray := color.RGBA{R: 200, G: 200, B: 200, A: 255}
-	draw.Draw(r.img, r.img.Bounds(), &image.Uniform{C: gray}, image.Point{}, draw.Src)
+	draw.Draw(r.img, r.img.Bounds(), &image.Uniform{color.White}, image.Point{}, draw.Src)
+}
+
+func (r *QRRenderer) getQrSize() int {
+	return r.version*4 + 17
 }
 
 func (r *QRRenderer) getFinderPos() [][2]int {
-	size := 21 // Get qr size from version here
+	size := r.getQrSize()
 
 	return [][2]int{
 		{0, 0},
 		{size - FINDER_PATTERN_SIZE, 0},
 		{0, size - FINDER_PATTERN_SIZE},
 	}
-}
-
-func (r *QRRenderer) getQRSize() int {
-	return 21 + (r.version-1)*4
 }
 
 func (ren *QRRenderer) SetFinderPattern(x, y, scale, orientation int) {
@@ -111,12 +113,12 @@ func (r *QRRenderer) SetFormatInfo() {
 		} else if i == 6 {
 			r.matrix[i+1][8] = binary
 		} else {
-			rowIndex := r.getQRSize() - 8 + (i - 7)
+			rowIndex := r.getQrSize() - 8 + (i - 7)
 			r.matrix[rowIndex][8] = binary
 		}
 
 		if i < 7 {
-			r.matrix[8][r.getQRSize()-i-1] = binary
+			r.matrix[8][r.getQrSize()-i-1] = binary
 		} else if i < 9 {
 			r.matrix[8][15-i-1+1] = binary
 		} else {
@@ -133,13 +135,13 @@ func (r *QRRenderer) SetData() {
 	}
 	binaryIndex := 0
 
-	for i := r.getQRSize() - 1; i > 0; i -= 2 {
+	for i := r.getQrSize() - 1; i > 0; i -= 2 {
 		if i == 6 {
 			i--
 		}
 
 		if goingUp {
-			for j := r.getQRSize() - 1; j >= 0; j-- {
+			for j := r.getQrSize() - 1; j >= 0; j-- {
 				if r.matrix[i][j] == 3 {
 					val, _ := strconv.ParseUint(string(binary[binaryIndex]), 2, 8)
 					r.matrix[i][j] = byte(val)
@@ -152,7 +154,7 @@ func (r *QRRenderer) SetData() {
 				}
 			}
 		} else {
-			for j := 0; j < r.getQRSize(); j++ {
+			for j := 0; j < r.getQrSize(); j++ {
 				if r.matrix[i][j] == 3 {
 					val, _ := strconv.ParseUint(string(binary[binaryIndex]), 2, 8)
 					r.matrix[i][j] = byte(val)
@@ -175,7 +177,7 @@ func (r *QRRenderer) SetDarkModule() {
 
 func (r *QRRenderer) ApplyMask() {
 	// Implement reserves bit system for future versions
-	size := r.getQRSize()
+	size := r.getQrSize()
 	for row := 0; row < size; row++ {
 		for col := 0; col < size; col++ {
 			if (row <= 8 && col <= 8) || // top-left
@@ -201,15 +203,17 @@ func (r *QRRenderer) ApplyMask() {
 }
 
 func (r *QRRenderer) Save() error {
-	for rowIndex, row := range r.matrix {
-		for colIndex := range row {
-			if r.matrix[rowIndex][colIndex] == 1 {
-				r.img.SetRGBA(rowIndex, colIndex, color.RGBA{0, 0, 0, 255})
-			} else if r.matrix[rowIndex][colIndex] == 0 {
-				r.img.SetRGBA(rowIndex, colIndex, color.RGBA{255, 255, 255, 255})
-			} else if r.matrix[rowIndex][colIndex] == 4 {
+	for i := 0; i < len(r.matrix); i++ {
+		for j := 0; j < len(r.matrix[0]); j++ {
+			if r.matrix[i][j] == 1 {
+				// r.img.SetRGBA(i, j, color.RGBA{0, 0, 0, 255})
+				draw.Draw(r.img, image.Rect((QUIET_ZONE_SIZE*r.scale)+(i*r.scale), (QUIET_ZONE_SIZE*r.scale)+(j*r.scale), (QUIET_ZONE_SIZE*r.scale)+(i*r.scale+r.scale), (QUIET_ZONE_SIZE*r.scale)+(j*r.scale+r.scale)), &image.Uniform{WHITE}, image.Point{}, draw.Src)
+			} else if r.matrix[i][j] == 0 {
+				// r.img.SetRGBA(i, j, color.RGBA{255, 255, 255, 255})
+				draw.Draw(r.img, image.Rect((QUIET_ZONE_SIZE*r.scale)+(i*r.scale), (QUIET_ZONE_SIZE*r.scale)+(j*r.scale), (QUIET_ZONE_SIZE*r.scale)+(i*r.scale+r.scale), (QUIET_ZONE_SIZE*r.scale)+(j*r.scale+r.scale)), &image.Uniform{BLACK}, image.Point{}, draw.Src)
+			} else if r.matrix[i][j] == 4 {
 				// 4 IS USED FOR DEBUGGING
-				r.img.SetRGBA(rowIndex, colIndex, color.RGBA{255, 0, 0, 255})
+				// r.img.SetRGBA(i, j, color.RGBA{255, 0, 0, 255})
 			} else { // 3 UNASSIGNED
 				continue
 			}
