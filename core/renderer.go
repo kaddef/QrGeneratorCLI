@@ -126,6 +126,7 @@ func (r *QRRenderer) SetFormatInfo() {
 }
 
 func (r *QRRenderer) SetData() {
+	goingUp := true
 	binary := ""
 	for _, b := range r.data {
 		binary += fmt.Sprintf("%08b", b)
@@ -137,7 +138,7 @@ func (r *QRRenderer) SetData() {
 			i--
 		}
 
-		if (i/2)%2 == 0 {
+		if goingUp {
 			for j := r.getQRSize() - 1; j >= 0; j-- {
 				if r.matrix[i][j] == 3 {
 					val, _ := strconv.ParseUint(string(binary[binaryIndex]), 2, 8)
@@ -164,6 +165,7 @@ func (r *QRRenderer) SetData() {
 				}
 			}
 		}
+		goingUp = !goingUp
 	}
 }
 
