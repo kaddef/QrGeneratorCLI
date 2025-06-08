@@ -13,6 +13,15 @@ type RSEncoder struct { // Reed-Solomon Encoder
 	BinaryData       string
 	DataByteArray    []byte
 	EncodedByteArray []byte
+	QrVersion        int
+	ECLevel          string
+}
+
+func InitEncoder(version int, ecLevel string) *RSEncoder {
+	return &RSEncoder{
+		QrVersion: version,
+		ECLevel:   ecLevel,
+	}
 }
 
 func (r *RSEncoder) SetPlainMessage(msg string) {
@@ -68,7 +77,16 @@ func (r *RSEncoder) binaryToByte() {
 
 func (r *RSEncoder) CreateData() {
 	encodingBits := r.getEncodingBits()
-	lengthBits := fmt.Sprintf("%08b", r.Length) //TODO: COUNT OF BITS CHANGE ACCORDING TO THE VERSION HORDCODED FOR NOW
+	var lengthBits string
+	if r.QrVersion >= 1 && r.QrVersion <= 9 {
+		lengthBits = fmt.Sprintf("%08b", r.Length)
+	} else if r.QrVersion >= 10 && r.QrVersion <= 26 {
+		lengthBits = fmt.Sprintf("%016b", r.Length)
+	} else if r.QrVersion >= 27 && r.QrVersion <= 40 {
+		lengthBits = fmt.Sprintf("%016b", r.Length)
+	} else {
+		panic("Invalid QR version for encoding")
+	}
 
 	r.BinaryData += encodingBits
 	r.BinaryData += lengthBits
@@ -77,7 +95,9 @@ func (r *RSEncoder) CreateData() {
 		r.BinaryData += fmt.Sprintf("%08b", b)
 	}
 
-	maxBits := 152 // TODO: CHANGES ACCORDING TO EC AND VERSION HARDCODED FOR NOW
+	totalBitCount := GetTotalCodewordsCount(r.QrVersion)
+	ecBitCount := GetECCodewordsCount(r.QrVersion, r.ECLevel)
+	maxBits := totalBitCount*8 - ecBitCount*8
 	remaining := maxBits - len(r.BinaryData)
 
 	// Terminator Bits
