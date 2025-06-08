@@ -44,7 +44,7 @@ func (r *QRRenderer) SetConfig(data []byte, scale int, version int, mask int, EC
 		}
 	}
 
-	draw.Draw(r.img, r.img.Bounds(), &image.Uniform{color.White}, image.Point{}, draw.Src)
+	draw.Draw(r.img, r.img.Bounds(), &image.Uniform{color.Gray16{0x8888}}, image.Point{}, draw.Src)
 }
 
 func (r *QRRenderer) getQrSize() int {
@@ -61,18 +61,57 @@ func (r *QRRenderer) getFinderPos() [][2]int {
 	}
 }
 
-func (ren *QRRenderer) SetFinderPattern(x, y, scale, orientation int) {
+func (ren *QRRenderer) SetAlignments() {
+	if ren.version == 1 {
+		return
+	}
+
+	alignmentValues, exists := GetAlignmentValues(ren.version)
+	posCount := len(alignmentValues)
+
+	if !exists {
+		panic("Invalid QR version for alignment positions")
+	}
+
+	for i := 0; i < int(posCount); i++ {
+		for j := 0; j < int(posCount); j++ {
+			if (i == 0 && j == 0) ||
+				(i == 0 && j == int(posCount)-1) ||
+				(i == int(posCount)-1 && j == 0) {
+				continue // Skip alignments that overlap with finder patterns
+			}
+
+			row := alignmentValues[i]
+			col := alignmentValues[j]
+
+			for r := -2; r <= 2; r++ {
+				for c := -2; c <= 2; c++ {
+					if r == -2 || r == 2 || c == -2 || c == 2 ||
+						(r == 0 && c == 0) {
+						ren.matrix[row+r][col+c] = 1
+					} else {
+						ren.matrix[row+r][col+c] = 0
+					}
+				}
+			}
+		}
+	}
+
+}
+
+func (ren *QRRenderer) SetFinderPattern() {
 	finderPositions := ren.getFinderPos()
+	size := ren.getQrSize()
 	for _, pos := range finderPositions {
 		row := pos[0] // 0 14 0
 		col := pos[1] // 0 0 14
 
 		for r := -1; r <= 7; r++ {
-			if row+r <= -1 || 21 <= row+r {
+			if row+r <= -1 || size <= row+r {
 				continue
 			}
 			for c := -1; c <= 7; c++ {
-				if col+c <= -1 || 21 <= col+c {
+				if col+c <= -1 || size <= col+c {
 					continue
 				}
 
