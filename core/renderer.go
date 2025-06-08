@@ -166,6 +166,26 @@ func (r *QRRenderer) SetFormatInfo() {
 	}
 }
 
+func (r *QRRenderer) SetVersionInfo() {
+	if r.version < 7 {
+		return // Version info is only applicable for versions 7 and above
+	}
+	size := r.getQrSize()
+	binaryData, exists := GetVersionBits(r.version)
+	if !exists {
+		panic("Invalid QR version for version info")
+	}
+	counter := 0
+	for i := 0; i < 6; i++ {
+		for j := 0; j < 3; j++ {
+			bit := byte(binaryData[17-counter] - '0') // subtracts int32 values
+			r.matrix[i][size-11+j] = bit              //BottomLeft
+			r.matrix[size-11+j][i] = bit              //TopRight
+			counter++
+		}
+	}
+}
+
 func (r *QRRenderer) SetData() {
 	goingUp := true
 	binary := ""
