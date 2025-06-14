@@ -8,6 +8,7 @@ import (
 	"image/png"
 	"os"
 	"strconv"
+	"strings"
 )
 
 const FINDER_PATTERN_SIZE = 7
@@ -44,7 +45,7 @@ func (r *QRRenderer) SetConfig(data []byte, scale int, version int, mask int, EC
 		}
 	}
 
-	draw.Draw(r.img, r.img.Bounds(), &image.Uniform{color.Gray16{0x8888}}, image.Point{}, draw.Src)
+	draw.Draw(r.img, r.img.Bounds(), &image.Uniform{color.White}, image.Point{}, draw.Src)
 }
 
 func (r *QRRenderer) getQrSize() int {
@@ -193,7 +194,9 @@ func (r *QRRenderer) SetData() {
 		binary += fmt.Sprintf("%08b", b)
 	}
 	binaryIndex := 0
+	binary += strings.Repeat("0", GetRemainderBitCount(r.version))
 
+	fmt.Println(binary)
 	for i := r.getQrSize() - 1; i > 0; i -= 2 {
 		if i == 6 {
 			i--

@@ -35,21 +35,26 @@ func main() {
 
 	core.InitTables()
 
-	e := core.InitEncoder(2, "L")
-	e.SetPlainMessage("zumba")
+	e := core.InitEncoder(1, "L")
+	e.SetPlainMessage("Türkiye")
 	e.CreateData()
 	encodedData := e.Encode()
-	// e.Debug()
+	e.Debug()
 
 	r := core.QRRenderer{}
-	r.SetConfig(encodedData, 1, 2, 2, "L")
+	r.SetConfig(encodedData, 1, 1, 2, "L")
 	r.SetFinderPattern()
 	r.SetTimingPattern()
 	r.SetFormatInfo()
 	r.SetDarkModule()
 	r.SetAlignments()  // Works After version 2
 	r.SetVersionInfo() // Works After version 7
-	// r.SetData()
-	// r.ApplyMask()
+	r.SetData()
+	r.ApplyMask()
 	r.Save()
 }
+
+// TODO Add Other modes than byte Numeric Alphanumeric Kanji
+// TODO Implement Mask Patterns
+// TODO Implement reserved matrix. The reserved matrix prevents the mask from being applied to the alignment patterns.
+// TODO Get rid of lookup tables

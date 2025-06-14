@@ -95,10 +95,10 @@ func (r *RSEncoder) CreateData() {
 		r.BinaryData += fmt.Sprintf("%08b", b)
 	}
 
-	totalBitCount := GetTotalCodewordsCount(r.QrVersion)
-	ecBitCount := GetECCodewordsCount(r.QrVersion, r.ECLevel)
-	maxBits := totalBitCount*8 - ecBitCount*8
-	remaining := maxBits - len(r.BinaryData)
+	totalCodewordCount := GetTotalCodewordsCount(r.QrVersion)
+	ecCodewordCount := GetECCodewordsCount(r.QrVersion, r.ECLevel)
+	maxDataBits := totalCodewordCount*8 - ecCodewordCount*8
+	remaining := maxDataBits - len(r.BinaryData)
 
 	// Terminator Bits
 	if remaining >= 4 {
@@ -139,11 +139,12 @@ func (r *RSEncoder) CreateData() {
 }
 
 func (r *RSEncoder) Encode() []byte {
-	generator := GenerateECPolynomial(7) // 7 HARDCODED
-	paddedData := make([]byte, len(r.DataByteArray)+7)
+	ECByteCount := GetECCodewordsCount(r.QrVersion, r.ECLevel)
+	generator := GenerateECPolynomial(ECByteCount)
+	paddedData := make([]byte, len(r.DataByteArray)+ECByteCount)
 	copy(paddedData, r.DataByteArray)
 	remainder := PolyMod(paddedData, generator)
-	copy(paddedData[len(paddedData)-7:], remainder)
+	copy(paddedData[len(paddedData)-ECByteCount:], remainder)
 	r.EncodedByteArray = paddedData
 	return r.EncodedByteArray
 }
