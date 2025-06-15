@@ -18,13 +18,14 @@ var WHITE = color.RGBA{0, 0, 0, 255}
 var BLACK = color.RGBA{255, 255, 255, 255}
 
 type QRRenderer struct {
-	data    []byte   // data
-	scale   int      // 1 is means literal qr size
-	version int      // currently only 1
-	ECLevel string   // e.g. "L", "M", "Q", "H"
-	mask    int      // 0-7 inclusive
-	matrix  [][]byte // raw size matrix we are goona scale this with scale
-	img     *image.RGBA
+	data     []byte   // data
+	scale    int      // 1 is means literal qr size
+	version  int      // currently only 1
+	ECLevel  string   // e.g. "L", "M", "Q", "H"
+	mask     int      // 0-7 inclusive
+	matrix   [][]byte // raw size matrix we are goona scale this with scale
+	reserved [][]byte
+	img      *image.RGBA
 }
 
 func (r *QRRenderer) SetConfig(data []byte, scale int, version int, mask int, ECLevel string) {
@@ -38,10 +39,13 @@ func (r *QRRenderer) SetConfig(data []byte, scale int, version int, mask int, EC
 
 	r.img = image.NewRGBA(image.Rectangle{image.Point{0, 0}, image.Point{(qrSize * scale) + (QUIET_ZONE_SIZE * scale * 2), (qrSize * scale) + (QUIET_ZONE_SIZE * scale * 2)}})
 	r.matrix = make([][]byte, qrSize)
+	r.reserved = make([][]byte, qrSize)
 	for i := range r.matrix {
 		r.matrix[i] = make([]byte, qrSize)
+		r.reserved[i] = make([]byte, qrSize)
 		for j := range r.matrix[i] {
-			r.matrix[i][j] = 3 // 3 MEANS UNASSIGNED
+			r.matrix[i][j] = 3   // 3 MEANS UNASSIGNED
+			r.reserved[i][j] = 0 // 0 MEANS NOT RESERVED
 		}
 	}
 
@@ -90,8 +94,10 @@ func (ren *QRRenderer) SetAlignments() {
 					if r == -2 || r == 2 || c == -2 || c == 2 ||
 						(r == 0 && c == 0) {
 						ren.matrix[row+r][col+c] = 1
+						ren.reserved[row+r][col+c] = 1
 					} else {
 						ren.matrix[row+r][col+c] = 0
+						ren.reserved[row+r][col+c] = 1
 					}
 				}
 			}
@@ -120,8 +126,10 @@ func (ren *QRRenderer) SetFinderPattern() {
 					(c >= 0 && c <= 6 && (r == 0 || r == 6)) ||
 					(r >= 2 && r <= 4 && c >= 2 && c <= 4) {
 					ren.matrix[row+r][col+c] = 1
+					ren.reserved[row+r][col+c] = 1
 				} else {
 					ren.matrix[row+r][col+c] = 0
+					ren.reserved[row+r][col+c] = 1
 				}
 			}
 		}
@@ -135,6 +143,8 @@ func (r *QRRenderer) SetTimingPattern() {
 
 		r.matrix[i][6] = value
 		r.matrix[6][i] = value
+		r.reserved[i][6] = 1
+		r.reserved[6][i] = 1
 	}
 }
 
@@ -150,19 +160,25 @@ func (r *QRRenderer) SetFormatInfo() {
 
 		if i <= 5 {
 			r.matrix[i][8] = binary
+			r.reserved[i][8] = 1
 		} else if i == 6 {
 			r.matrix[i+1][8] = binary
+			r.reserved[i+1][8] = 1
 		} else {
 			rowIndex := r.getQrSize() - 8 + (i - 7)
 			r.matrix[rowIndex][8] = binary
+			r.reserved[rowIndex][8] = 1
 		}
 
 		if i < 7 {
 			r.matrix[8][r.getQrSize()-i-1] = binary
+			r.reserved[8][r.getQrSize()-i-1] = 1
 		} else if i < 9 {
 			r.matrix[8][15-i-1+1] = binary
+			r.reserved[8][15-i-1+1] = 1
 		} else {
 			r.matrix[8][15-i-1] = binary
+			r.reserved[8][15-i-1] = 1
 		}
 	}
 }
@@ -182,6 +198,8 @@ func (r *QRRenderer) SetVersionInfo() {
 			bit := byte(binaryData[17-counter] - '0') // subtracts int32 values
 			r.matrix[i][size-11+j] = bit              //BottomLeft
 			r.matrix[size-11+j][i] = bit              //TopRight
+			r.reserved[i][size-11+j] = 1
+			r.reserved[size-11+j][i] = 1
 			counter++
 		}
 	}
@@ -235,6 +253,7 @@ func (r *QRRenderer) SetData() {
 
 func (r *QRRenderer) SetDarkModule() {
 	r.matrix[8][(4*r.version)+9] = 1
+	r.reserved[8][(4*r.version)+9] = 1
 }
 
 func (r *QRRenderer) ApplyMask() {
@@ -252,7 +271,9 @@ func (r *QRRenderer) ApplyMask() {
 				// Skip format info (fixed 15 bits near finders)
 				(row == 8 && col < 9) || (row < 9 && col == 8) || // top-left
 				(row == 8 && col >= size-8) || // top-right horizontal
-				(row >= size-8 && col == 8) { // bottom-left vertical
+				(row >= size-8 && col == 8) || // bottom-left vertical
+
+				r.reserved[row][col] == 1 { // Reserved bit
 
 				continue
 			}

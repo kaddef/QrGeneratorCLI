@@ -31,3 +31,6 @@ Thumbs.db
 
 # Exclude PNG files
 *.png
+
+# Exclude Debug folder
+debug/

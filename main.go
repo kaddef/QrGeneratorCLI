@@ -35,14 +35,14 @@ func main() {
 
 	core.InitTables()
 
-	e := core.InitEncoder(1, "L")
-	e.SetPlainMessage("Türkiye")
+	e := core.InitEncoder(2, "L")
+	e.SetPlainMessage("ĞÜİŞÖÇğüışöç")
 	e.CreateData()
 	encodedData := e.Encode()
 	e.Debug()
 
 	r := core.QRRenderer{}
-	r.SetConfig(encodedData, 1, 1, 2, "L")
+	r.SetConfig(encodedData, 1, 2, 2, "L")
 	r.SetFinderPattern()
 	r.SetTimingPattern()
 	r.SetFormatInfo()
@@ -58,3 +58,5 @@ func main() {
 // TODO Implement Mask Patterns
 // TODO Implement reserved matrix. The reserved matrix prevents the mask from being applied to the alignment patterns.
 // TODO Get rid of lookup tables
+// TODO In Apply mask use only reserved matrix
+// TODO Add ECI Compatibility
