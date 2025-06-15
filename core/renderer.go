@@ -214,7 +214,6 @@ func (r *QRRenderer) SetData() {
 	binaryIndex := 0
 	binary += strings.Repeat("0", GetRemainderBitCount(r.version))
 
-	fmt.Println(binary)
 	for i := r.getQrSize() - 1; i > 0; i -= 2 {
 		if i == 6 {
 			i--
@@ -296,7 +295,7 @@ func (r *QRRenderer) Save() error {
 				draw.Draw(r.img, image.Rect((QUIET_ZONE_SIZE*r.scale)+(i*r.scale), (QUIET_ZONE_SIZE*r.scale)+(j*r.scale), (QUIET_ZONE_SIZE*r.scale)+(i*r.scale+r.scale), (QUIET_ZONE_SIZE*r.scale)+(j*r.scale+r.scale)), &image.Uniform{BLACK}, image.Point{}, draw.Src)
 			} else if r.matrix[i][j] == 4 {
 				// 4 IS USED FOR DEBUGGING
-				// r.img.SetRGBA(i, j, color.RGBA{255, 0, 0, 255})
+				draw.Draw(r.img, image.Rect((QUIET_ZONE_SIZE*r.scale)+(i*r.scale), (QUIET_ZONE_SIZE*r.scale)+(j*r.scale), (QUIET_ZONE_SIZE*r.scale)+(i*r.scale+r.scale), (QUIET_ZONE_SIZE*r.scale)+(j*r.scale+r.scale)), &image.Uniform{color.RGBA{255, 0, 0, 255}}, image.Point{}, draw.Src)
 			} else { // 3 UNASSIGNED
 				continue
 			}

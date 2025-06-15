@@ -139,12 +139,71 @@ func (r *RSEncoder) CreateData() {
 }
 
 func (r *RSEncoder) Encode() []byte {
-	ECByteCount := GetECCodewordsCount(r.QrVersion, r.ECLevel)
-	generator := GenerateECPolynomial(ECByteCount)
-	paddedData := make([]byte, len(r.DataByteArray)+ECByteCount)
-	copy(paddedData, r.DataByteArray)
-	remainder := PolyMod(paddedData, generator)
-	copy(paddedData[len(paddedData)-ECByteCount:], remainder)
-	r.EncodedByteArray = paddedData
+	var blocksInGroup1 = QR_CODE_CAPACITY_TABLE[r.QrVersion][r.ECLevel]["blocksGroup1"]
+	var blocksInGroup2 = QR_CODE_CAPACITY_TABLE[r.QrVersion][r.ECLevel]["blocksGroup2"]
+	var dataCodewordsGroup1Blocks = QR_CODE_CAPACITY_TABLE[r.QrVersion][r.ECLevel]["dataCodewordsGroup1"]
+	var dataCodewordsGroup2Blocks = QR_CODE_CAPACITY_TABLE[r.QrVersion][r.ECLevel]["dataCodewordsGroup2"]
+	var ecCodewordsPerBlock = QR_CODE_CAPACITY_TABLE[r.QrVersion][r.ECLevel]["ecCodewordsPerBlock"]
+
+	var group1 = make([][]byte, blocksInGroup1)
+	var group2 = make([][]byte, blocksInGroup2)
+
+	var group1EC = make([][]byte, blocksInGroup1)
+	var group2EC = make([][]byte, blocksInGroup2)
+
+	offset := 0
+	for i := 0; i < blocksInGroup1; i++ {
+		group1[i] = make([]byte, dataCodewordsGroup1Blocks)
+		group1EC[i] = make([]byte, ecCodewordsPerBlock)
+		copy(group1[i], r.DataByteArray[offset:offset+dataCodewordsGroup1Blocks])
+
+		tempPadded := make([]byte, dataCodewordsGroup1Blocks+ecCodewordsPerBlock)
+		copy(tempPadded, group1[i])
+		generator := GenerateECPolynomial(ecCodewordsPerBlock)
+		remainder := PolyMod(tempPadded, generator)
+		copy(group1EC[i], remainder)
+
+		offset += dataCodewordsGroup1Blocks
+	}
+
+	for i := 0; i < blocksInGroup2; i++ {
+		group2[i] = make([]byte, dataCodewordsGroup2Blocks)
+		group2EC[i] = make([]byte, ecCodewordsPerBlock)
+		copy(group2[i], r.DataByteArray[offset:offset+dataCodewordsGroup2Blocks])
+
+		tempPadded := make([]byte, dataCodewordsGroup2Blocks+ecCodewordsPerBlock)
+		copy(tempPadded, group2[i])
+		generator := GenerateECPolynomial(ecCodewordsPerBlock)
+		remainder := PolyMod(tempPadded, generator)
+		copy(group2EC[i], remainder)
+
+		offset += dataCodewordsGroup2Blocks
+	}
+	var result []byte
+	for i := 0; i < max(dataCodewordsGroup1Blocks, dataCodewordsGroup2Blocks); i++ {
+		for j := 0; j < blocksInGroup1; j++ {
+			if i < dataCodewordsGroup1Blocks {
+				result = append(result, group1[j][i])
+			}
+		}
+
+		for j := 0; j < blocksInGroup2; j++ {
+			if i < dataCodewordsGroup2Blocks {
+				result = append(result, group2[j][i])
+			}
+		}
+	}
+
+	for i := 0; i < ecCodewordsPerBlock; i++ {
+		for j := 0; j < blocksInGroup1; j++ {
+			result = append(result, group1EC[j][i])
+		}
+
+		for j := 0; j < blocksInGroup2; j++ {
+			result = append(result, group2EC[j][i])
+		}
+	}
+
+	r.EncodedByteArray = result
 	return r.EncodedByteArray
 }

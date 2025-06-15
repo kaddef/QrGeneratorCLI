@@ -1,9 +1,6 @@
 package main
 
 import (
-	// "flag"
-	// "fmt"
-	// "os"
 	"qrGenerator/core"
 )
 
@@ -35,14 +32,14 @@ func main() {
 
 	core.InitTables()
 
-	e := core.InitEncoder(2, "L")
-	e.SetPlainMessage("ĞÜİŞÖÇğüışöç")
+	e := core.InitEncoder(8, "L")
+	e.SetPlainMessage("deneme")
 	e.CreateData()
 	encodedData := e.Encode()
 	e.Debug()
 
 	r := core.QRRenderer{}
-	r.SetConfig(encodedData, 1, 2, 2, "L")
+	r.SetConfig(encodedData, 1, 8, 2, "L")
 	r.SetFinderPattern()
 	r.SetTimingPattern()
 	r.SetFormatInfo()
@@ -54,9 +51,12 @@ func main() {
 	r.Save()
 }
 
-// TODO Add Other modes than byte Numeric Alphanumeric Kanji
-// TODO Implement Mask Patterns
-// TODO Implement reserved matrix. The reserved matrix prevents the mask from being applied to the alignment patterns.
-// TODO Get rid of lookup tables
-// TODO In Apply mask use only reserved matrix
-// TODO Add ECI Compatibility
+// TODO: Add support for modes other than Byte (Numeric, Alphanumeric, Kanji)
+// TODO: Implement mask patterns
+// DONE: Implement reserved matrix — it prevents the mask from being applied to static patterns
+// TODO: Eliminate lookup tables calculate them dynamically
+// TODO: In ApplyMask, use only the reserved matrix
+// TODO: Add ECI (Extended Channel Interpretation) compatibility
+// TODO: Dynamically determine the optimal mask pattern
+// TODO: Dynamically determine the version based on the message length and error correction level
+// TODO URGENT: Divide data into blocks and apply Reed-Solomon encoding each block
