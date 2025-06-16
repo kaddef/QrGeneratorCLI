@@ -153,7 +153,7 @@ func (r *QRRenderer) SetFormatInfo() {
 	if !exists {
 		panic("Wrong EC or Mask")
 	}
-	binaryData := fmt.Sprintf("%08b", data)
+	binaryData := fmt.Sprintf("%015b", data)
 
 	for i := 0; i <= 14; i++ {
 		binary := binaryData[i] - 48
@@ -256,28 +256,15 @@ func (r *QRRenderer) SetDarkModule() {
 }
 
 func (r *QRRenderer) ApplyMask() {
-	// Implement reserves bit system for future versions
+	maskFunc := maskPatterns[2]
+
 	size := r.getQrSize()
 	for row := 0; row < size; row++ {
 		for col := 0; col < size; col++ {
-			if (row <= 8 && col <= 8) || // top-left
-				(row <= 8 && col >= size-8) || // top-right
-				(row >= size-8 && col <= 8) || // bottom-left
-
-				// Skip timing patterns (row 6, col 6)
-				row == 6 || col == 6 ||
-
-				// Skip format info (fixed 15 bits near finders)
-				(row == 8 && col < 9) || (row < 9 && col == 8) || // top-left
-				(row == 8 && col >= size-8) || // top-right horizontal
-				(row >= size-8 && col == 8) || // bottom-left vertical
-
-				r.reserved[row][col] == 1 { // Reserved bit
-
+			if r.reserved[row][col] == 1 { // Reserved bit
 				continue
 			}
-			eval := col%3 == 0
-			if eval {
+			if maskFunc(row, col) {
 				r.matrix[col][row] ^= 1 // flips bit
 			}
 		}
