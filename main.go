@@ -1,45 +1,46 @@
 package main
 
 import (
+	"flag"
 	"qrGenerator/core"
 )
 
 func main() {
-	// version := flag.Int("version", 1, "QR version (1-40)")
-	// mask := flag.Int("mask", -1, "Mask pattern (0-7), -1 for automatic")
-	// scale := flag.Int("scale", 4, "Scale of the QR image")
-	// ecLevel := flag.String("ecLevel", "L", "Error correction level: L, M, Q, or H")
+	version := flag.Int("V", -1, "QR version (1-40)")
+	mask := flag.Int("M", -1, "Mask pattern (0-7)")
+	scale := flag.Int("S", -1, "Scale of the QR image")
+	ecLevel := flag.String("EC", "", "Error correction level: L, M, Q, or H")
+	message := flag.String("MSG", "", "Message to encode in the QR code")
 
-	// // Parse flags
-	// flag.Parse()
+	// Parse flags
+	flag.Parse()
 
-	// // Positional argument: message
-	// if flag.NArg() == 0 {
-	// 	fmt.Println("Error: message is required.")
-	// 	fmt.Println("Usage: qrgen [options] <message>")
-	// 	flag.PrintDefaults()
-	// 	os.Exit(1)
-	// }
-
-	// message := flag.Arg(0)
-
-	// fmt.Println("Generating QR code with:")
-	// fmt.Println("Message:", message)
-	// fmt.Println("Version:", *version)
-	// fmt.Println("Mask:", *mask)
-	// fmt.Println("Scale:", *scale)
-	// fmt.Println("Error Correction Level:", *ecLevel)
+	if *message == "" {
+		panic("Empty Message")
+	}
+	if *ecLevel == "" {
+		*ecLevel = "L" // Default to Low error correction level
+	}
+	if *scale == -1 {
+		*scale = 1 // Determine this according to the size of qr code
+	}
+	if *mask == -1 {
+		*mask = 2 // Mask is gonna be determined dynamically but we can take for more customization
+	}
+	if *version == -1 {
+		*version = 3 // Default version, can be determined dynamically based on message length and error correction level
+	}
 
 	core.InitTables()
 
-	e := core.InitEncoder(3, "H")
-	e.SetPlainMessage("deneme")
+	e := core.InitEncoder(*version, *ecLevel) //e := core.InitEncoder(3, "H")
+	e.SetPlainMessage(*message)               //e.SetPlainMessage("deneme")
 	e.CreateData()
 	encodedData := e.Encode()
 	e.Debug()
 
 	r := core.QRRenderer{}
-	r.SetConfig(encodedData, 1, 3, 2, "H")
+	r.SetConfig(encodedData, *scale, *version, *mask, *ecLevel) //r.SetConfig(encodedData, 1, 3, 2, "H")
 	r.SetFinderPattern()
 	r.SetTimingPattern()
 	r.SetFormatInfo()
@@ -60,3 +61,5 @@ func main() {
 // TODO: Add ECI (Extended Channel Interpretation) compatibility
 // TODO: Dynamically determine the optimal mask pattern
 // TODO: Dynamically determine the version based on the message length and error correction level
+
+// go run main.go -EC L -S 5 -V 2 -MSG "Türkiye"

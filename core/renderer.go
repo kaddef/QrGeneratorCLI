@@ -14,8 +14,8 @@ import (
 const FINDER_PATTERN_SIZE = 7
 const QUIET_ZONE_SIZE = 4
 
-var WHITE = color.RGBA{0, 0, 0, 255}
-var BLACK = color.RGBA{255, 255, 255, 255}
+var BLACK = color.RGBA{0, 0, 0, 255}
+var WHITE = color.RGBA{255, 255, 255, 255}
 
 type QRRenderer struct {
 	data     []byte   // data
@@ -272,14 +272,15 @@ func (r *QRRenderer) ApplyMask() {
 }
 
 func (r *QRRenderer) Save() error {
+	fmt.Println(MaskEval1(r.matrix))
 	for i := 0; i < len(r.matrix); i++ {
 		for j := 0; j < len(r.matrix[0]); j++ {
 			if r.matrix[i][j] == 1 {
 				// r.img.SetRGBA(i, j, color.RGBA{0, 0, 0, 255})
-				draw.Draw(r.img, image.Rect((QUIET_ZONE_SIZE*r.scale)+(i*r.scale), (QUIET_ZONE_SIZE*r.scale)+(j*r.scale), (QUIET_ZONE_SIZE*r.scale)+(i*r.scale+r.scale), (QUIET_ZONE_SIZE*r.scale)+(j*r.scale+r.scale)), &image.Uniform{WHITE}, image.Point{}, draw.Src)
+				draw.Draw(r.img, image.Rect((QUIET_ZONE_SIZE*r.scale)+(i*r.scale), (QUIET_ZONE_SIZE*r.scale)+(j*r.scale), (QUIET_ZONE_SIZE*r.scale)+(i*r.scale+r.scale), (QUIET_ZONE_SIZE*r.scale)+(j*r.scale+r.scale)), &image.Uniform{BLACK}, image.Point{}, draw.Src)
 			} else if r.matrix[i][j] == 0 {
 				// r.img.SetRGBA(i, j, color.RGBA{255, 255, 255, 255})
-				draw.Draw(r.img, image.Rect((QUIET_ZONE_SIZE*r.scale)+(i*r.scale), (QUIET_ZONE_SIZE*r.scale)+(j*r.scale), (QUIET_ZONE_SIZE*r.scale)+(i*r.scale+r.scale), (QUIET_ZONE_SIZE*r.scale)+(j*r.scale+r.scale)), &image.Uniform{BLACK}, image.Point{}, draw.Src)
+				draw.Draw(r.img, image.Rect((QUIET_ZONE_SIZE*r.scale)+(i*r.scale), (QUIET_ZONE_SIZE*r.scale)+(j*r.scale), (QUIET_ZONE_SIZE*r.scale)+(i*r.scale+r.scale), (QUIET_ZONE_SIZE*r.scale)+(j*r.scale+r.scale)), &image.Uniform{WHITE}, image.Point{}, draw.Src)
 			} else if r.matrix[i][j] == 4 {
 				// 4 IS USED FOR DEBUGGING
 				draw.Draw(r.img, image.Rect((QUIET_ZONE_SIZE*r.scale)+(i*r.scale), (QUIET_ZONE_SIZE*r.scale)+(j*r.scale), (QUIET_ZONE_SIZE*r.scale)+(i*r.scale+r.scale), (QUIET_ZONE_SIZE*r.scale)+(j*r.scale+r.scale)), &image.Uniform{color.RGBA{255, 0, 0, 255}}, image.Point{}, draw.Src)

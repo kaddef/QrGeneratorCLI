@@ -3,6 +3,8 @@ package core
 import (
 	"fmt"
 	"strconv"
+
+	"golang.org/x/text/encoding/charmap"
 )
 
 type RSEncoder struct { // Reed-Solomon Encoder
@@ -25,10 +27,16 @@ func InitEncoder(version int, ecLevel string) *RSEncoder {
 }
 
 func (r *RSEncoder) SetPlainMessage(msg string) {
+	textEncoder := charmap.ISO8859_1.NewEncoder()
+	if QR_CODE_CAPACITY_TABLE[r.QrVersion][r.ECLevel]["totalCodewords"] < len([]byte(msg)) {
+		panic(fmt.Sprintf("Message length exceeds the maximum capacity for QR version %d and EC level %s", r.QrVersion, r.ECLevel))
+	}
 	r.PlainTextData = msg
-	r.Length = len(msg)
+	//r.Length = len(msg)
 	r.Encoding = "Byte" // Numeric Alphanumeric Byte Kanji
-	r.PlainByteArray = []byte(msg)
+	//r.PlainByteArray = []byte(msg)
+	r.PlainByteArray, _ = textEncoder.Bytes([]byte(msg))
+	r.Length = len(r.PlainByteArray)
 }
 
 func (r *RSEncoder) Debug() {
